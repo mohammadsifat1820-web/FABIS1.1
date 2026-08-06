@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FABIS – Social Writing Platform</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js">
+    </script>
+
+    <style>
+        /* ---------- same styles as before ---------- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0f;
+            color: #f1f1f1;
+            min-height: 100vh;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #14141c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a3a;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3a3a4a;
+        }
+        .glass {
+            background: rgba(20, 20, 30, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .glass-light {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6, #6d28d9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f1a);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #f1f1f1;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+        .card {
+            background: rgba(18, 18, 28, 0.8);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: rgba(139, 92, 246, 0.15);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+        .input-dark {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #f1f1f1;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            outline: none;
+        }
+        .input-dark:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .input-dark::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            flex-shrink: 0;
+            object-fit: cover;
+        }
+        .avatar-lg {
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+            font-size: 0.8rem;
+        }
+        .badge {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .post {
+            background: rgba(18, 18, 28, 0.6);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 20px;
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
+        }
+        .post:hover {
+            border-color: rgba(139, 92, 246, 0.08);
+            background: rgba(18, 18, 28, 0.8);
+        }
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 8px;
+        }
+        .container-custom {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+        @media (min-width: 768px) {
+            .container-custom {
+                padding: 0 24px;
+            }
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-link:hover {
+            color: #f1f1f1;
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .nav-link.active {
+            color: #a78bfa;
+            background: rgba(139, 92, 246, 0.08);
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 8px 0 env(safe-area-inset-bottom, 8px) 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            background: transparent;
+            border: none;
+        }
+        .bottom-nav .nav-item.active {
+            color: #a78bfa;
+        }
+        .bottom-nav .nav-item:hover {
+            color: #f1f1f1;
+        }
+        .bottom-nav .nav-item svg {
+            width: 24px;
+            height: 24px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 14px 24px;
+            color: #f1f1f1;
+            font-size: 0.9rem;
+            z-index: 100;
+            animation: fadeInUp 0.3s ease-out;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.success {
+            border-color: rgba(52, 211, 153, 0.2);
+        }
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .toast.info {
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeInUp 0.25s ease-out;
+        }
+        .modal-content {
+            background: rgba(18, 18, 28, 0.98);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 28px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        .splash {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        .splash.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .splash .logo-text {
+            font-size: 4rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6, #6d28d9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .splash .sub {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            margin-top: 8px;
+            letter-spacing: 0.1em;
+        }
+        .splash .studio {
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.7rem;
+            margin-top: 40px;
+            letter-spacing: 0.05em;
+        }
+        .like-btn {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+        .like-btn:hover {
+            color: #f1f1f1;
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .like-btn.liked {
+            color: #ef4444;
+        }
+        .like-btn.liked:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+        }
+        .like-btn.liked svg {
+            fill: #ef4444;
+        }
+        .comment {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .comment:last-child {
+            border-bottom: none;
+        }
+        @media (max-width: 480px) {
+            .container-custom {
+                padding: 0 12px;
+            }
+            .post {
+                padding: 16px;
+            }
+            .modal-content {
+                padding: 20px;
+                margin: 10px;
+                border-radius: 16px;
+            }
+        }
+        ::selection {
+            background: rgba(139, 92, 246, 0.3);
+            color: #fff;
+        }
+        *:focus-visible {
+            outline: 2px solid #8b5cf6;
+            outline-offset: 2px;
+        }
+        .light-mode {
+            background: #f8f7fc;
+            color: #1a1a2e;
+        }
+        .light-mode .card {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.04);
+        }
+        .light-mode .post {
+            background: rgba(255, 255, 255, 0.6);
+            border-color: rgba(0, 0, 0, 0.04);
+        }
+        .light-mode .post:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(139, 92, 246, 0.1);
+        }
+        .light-mode .input-dark {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.06);
+            color: #1a1a2e;
+        }
+        .light-mode .input-dark:focus {
+            border-color: #8b5cf6;
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .light-mode .input-dark::placeholder {
+            color: rgba(0, 0, 0, 0.3);
+        }
+        .light-mode .glass {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(0, 0, 0, 0.04);
+        }
+        .light-mode .bottom-nav {
+            background: rgba(248, 247, 252, 0.92);
+            border-top-color: rgba(0, 0, 0, 0.04);
+        }
+        .light-mode .bottom-nav .nav-item {
+            color: rgba(0, 0, 0, 0.4);
+        }
+        .light-mode .bottom-nav .nav-item.active {
+            color: #8b5cf6;
+        }
+        .light-mode .bottom-nav .nav-item:hover {
+            color: #1a1a2e;
+        }
+        .light-mode .splash {
+            background: #f8f7fc;
+        }
+        .light-mode .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(0, 0, 0, 0.04);
+        }
+        .light-mode .btn-secondary {
+            background: rgba(0, 0, 0, 0.04);
+            color: #1a1a2e;
+            border-color: rgba(0, 0, 0, 0.06);
+        }
+        .light-mode .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .light-mode .nav-link {
+            color: rgba(0, 0, 0, 0.4);
+        }
+        .light-mode .nav-link:hover {
+            color: #1a1a2e;
+            background: rgba(0, 0, 0, 0.04);
+        }
+        .light-mode .nav-link.active {
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.08);
+        }
+        .light-mode .comment {
+            border-color: rgba(0, 0, 0, 0.04);
+        }
+        .light-mode .badge {
+            background: rgba(139, 92, 246, 0.1);
+        }
+        .light-mode .toast {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(0, 0, 0, 0.04);
+            color: #1a1a2e;
+        }
+        /* loading spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #8b5cf6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ======= SPLASH ======= -->
+    <div id="splash" class="splash">
+        <div class="logo-text">FABIS</div>
+        <div class="sub">Created by SIFAT</div>
+        <div class="studio">Powered by SIFAT STUDIO</div>
+    </div>
+
+    <!-- ======= APP ======= -->
+    <div id="app" class="min-h-screen" style="display:none;">
+
+        <!-- TOAST -->
+        <div id="toast" class="toast" style="display:none;"></div>
+
+        <!-- MODAL -->
+        <div id="modal" class="modal-overlay" style="display:none;">
+            <div id="modalContent" class="modal-content"></div>
+        </div>
+
+        <!-- MAIN -->
+        <div id="mainContent" class="container-custom pb-24 pt-4"></div>
+
+        <!-- BOTTOM NAV -->
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="nav-item active" data-view="feed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>
+                <span>Feed</span>
+            </button>
+            <button class="nav-item" data-view="explore">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <span>Explore</span>
+            </button>
+            <button class="nav-item" data-view="create">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                <span>New Post</span>
+            </button>
+            <button class="nav-item" data-view="notifications">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                <span>Alerts</span>
+            </button>
+            <button class="nav-item" data-view="profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Profile</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // ============================================================
+        //  FABIS — Firebase Integration
+        //  Created by SIFAT  |  Powered by SIFAT STUDIO
+        //  Version 1.0.0
+        // ============================================================
+
+        // -------- FIREBASE CONFIG --------
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRoK9uqVCFEBTpHH04VTTL4770Cnlktag",
+            authDomain: "fabis-7a101.firebaseapp.com",
+            projectId: "fabis-7a101",
+            storageBucket: "fabis-7a101.firebasestorage.app",
+            messagingSenderId: "1008545164500",
+            appId: "1:1008545164500:web:118030efa4b502b32d9f41"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Enable offline persistence
+        db.enablePersistence({ synchronizeTabs: true })
+            .catch(err => console.warn('Firestore persistence:', err));
+
+        // -------- GLOBAL STATE --------
+        const STATE = {
+            currentUser: null, // firebase user (auth)
+            userProfile: null, // firestore user doc data
+            posts: [],
+            users: [],
+            comments: {},
+            likes: {},
+            followers: {},
+            following: {},
+            notifications: [],
+            settings: { theme: 'dark', privacy: 'public' },
+            currentView: 'feed',
+            selectedUser: null,
+            editingPost: null,
+            viewingComments: null,
+            searchQuery: '',
+            // listeners
+            unsubscribers: [],
+            loading: false,
+        };
+
+        // -------- DOM REFS --------
+        const $ = (sel) => document.querySelector(sel);
+        const $$ = (sel) => document.querySelectorAll(sel);
+        const app = $('#app');
+        const splash = $('#splash');
+        const mainContent = $('#mainContent');
+        const toastEl = $('#toast');
+        const modalEl = $('#modal');
+        const modalContent = $('#modalContent');
+        const bottomNav = $('#bottomNav');
+
+        // -------- UTILITY --------
+        function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+        function formatDate(ts) {
+            const d = new Date(ts);
+            const now = new Date();
+            const diff = Math.floor((now - d) / 1000);
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function timeAgo(ts) { return formatDate(ts); }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        function randomColor() {
+            const colors = ['#8b5cf6', '#6d28d9', '#7c3aed', '#a78bfa', '#f472b6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6',
+                '#ef4444'
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function showToast(msg, type = 'info') {
+            toastEl.textContent = msg;
+            toastEl.className = 'toast ' + type;
+            toastEl.style.display = 'block';
+            clearTimeout(toastEl._hide);
+            toastEl._hide = setTimeout(() => { toastEl.style.display = 'none'; }, 3500);
+        }
+
+        function openModal(html) {
+            modalContent.innerHTML = html;
+            modalEl.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modalEl.style.display = 'none';
+        }
+        modalEl.addEventListener('click', (e) => {
+            if (e.target === modalEl) closeModal();
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // -------- AUTH HELPERS --------
+        async function signUp(email, username, displayName, password, bio = '') {
+            try {
+                // Check username uniqueness
+                const snapshot = await db.collection('users').where('username', '==', username).get();
+                if (!snapshot.empty) {
+                    showToast('Username already taken', 'error');
+                    return false;
+                }
+                // Create auth user
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                const user = cred.user;
+                // Store profile in Firestore
+                const profile = {
+                    uid: user.uid,
+                    username,
+                    displayName,
+                    email,
+                    bio: bio || 'Writer on FABIS',
+                    avatar: null,
+                    joinDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    isAdmin: false, // first user will be made admin later if needed
+                    isSuspended: false,
+                    settings: { theme: 'dark', privacy: 'public' },
+                };
+                await db.collection('users').doc(user.uid).set(profile);
+                // If this is the first user, make them admin
+                const allUsers = await db.collection('users').get();
+                if (allUsers.size === 1) {
+                    await db.collection('users').doc(user.uid).update({ isAdmin: true });
+                    profile.isAdmin = true;
+                }
+                STATE.currentUser = user;
+                STATE.userProfile = profile;
+                showToast('Welcome to FABIS, ' + displayName + '!', 'success');
+                renderApp();
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        async function login(emailOrUsername, password) {
+            try {
+                let email = emailOrUsername;
+                // If input contains '@' assume email, else look up username
+                if (!emailOrUsername.includes('@')) {
+                    const snapshot = await db.collection('users').where('username', '==', emailOrUsername).get();
+                    if (snapshot.empty) {
+                        showToast('User not found', 'error');
+                        return false;
+                    }
+                    email = snapshot.docs[0].data().email;
+                }
+                const cred = await auth.signInWithEmailAndPassword(email, password);
+                const user = cred.user;
+                // Fetch profile
+                const doc = await db.collection('users').doc(user.uid).get();
+                if (!doc.exists) {
+                    showToast('Profile not found', 'error');
+                    await auth.signOut();
+                    return false;
+                }
+                const profile = doc.data();
+                if (profile.isSuspended) {
+                    showToast('Account suspended', 'error');
+                    await auth.signOut();
+                    return false;
+                }
+                STATE.currentUser = user;
+                STATE.userProfile = profile;
+                // Apply theme
+                if (profile.settings && profile.settings.theme === 'light') {
+                    document.body.classList.add('light-mode');
+                } else {
+                    document.body.classList.remove('light-mode');
+                }
+                showToast('Welcome back, ' + profile.displayName + '!', 'success');
+                renderApp();
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        async function logout() {
+            await auth.signOut();
+            STATE.currentUser = null;
+            STATE.userProfile = null;
+            // Unsubscribe all listeners
+            STATE.unsubscribers.forEach(unsub => unsub());
+            STATE.unsubscribers = [];
+            renderApp();
+            showToast('Logged out', 'info');
+        }
+
+        // -------- FIRESTORE DATA HELPERS --------
+        function getUser(uid) {
+            return STATE.users.find(u => u.uid === uid);
+        }
+
+        function getPosts() {
+            return [...STATE.posts].sort((a, b) => b.createdAt - a.createdAt);
+        }
+
+        function getPostsByUser(uid) {
+            return STATE.posts.filter(p => p.userId === uid).sort((a, b) => b.createdAt - a.createdAt);
+        }
+
+        function getLikes(postId) {
+            return STATE.likes[postId] || [];
+        }
+
+        function getComments(postId) {
+            return STATE.comments[postId] || [];
+        }
+
+        function getFollowers(uid) {
+            return STATE.followers[uid] || [];
+        }
+
+        function getFollowing(uid) {
+            return STATE.following[uid] || [];
+        }
+
+        function isFollowing(followerId, targetId) {
+            const list = STATE.followers[targetId] || [];
+            return list.includes(followerId);
+        }
+
+        function isLiked(postId, userId) {
+            const list = STATE.likes[postId] || [];
+            return list.includes(userId);
+        }
+
+        // -------- FIRESTORE LISTENERS --------
+        function startListeners() {
+            // Unsubscribe old
+            STATE.unsubscribers.forEach(unsub => unsub());
+            STATE.unsubscribers = [];
+
+            if (!STATE.currentUser) return;
+
+            // Users collection (for profiles)
+            const unsubUsers = db.collection('users').onSnapshot((snapshot) => {
+                STATE.users = [];
+                snapshot.forEach(doc => {
+                    STATE.users.push({ ...doc.data(), uid: doc.id });
+                });
+                // Re-render if on user-related views
+                renderCurrentView();
+            }, err => console.warn('Users listener error:', err));
+            STATE.unsubscribers.push(unsubUsers);
+
+            // Posts collection
+            const unsubPosts = db.collection('posts').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+                STATE.posts = [];
+                snapshot.forEach(doc => {
+                    STATE.posts.push({ ...doc.data(), id: doc.id });
+                });
+                renderCurrentView();
+            }, err => console.warn('Posts listener error:', err));
+            STATE.unsubscribers.push(unsubPosts);
+
+            // Likes (we'll store in a subcollection? For simplicity, we'll fetch likes per post on demand,
+            // but we can also listen to all likes. Let's listen to likes collection.
+            // We'll store likes in a collection "likes" with fields: postId, userId.
+            // We'll build a map postId -> [userIds]
+            const unsubLikes = db.collection('likes').onSnapshot((snapshot) => {
+                const likesMap = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (!likesMap[data.postId]) likesMap[data.postId] = [];
+                    likesMap[data.postId].push(data.userId);
+                });
+                STATE.likes = likesMap;
+                renderCurrentView();
+            }, err => console.warn('Likes listener error:', err));
+            STATE.unsubscribers.push(unsubLikes);
+
+            // Comments: we'll store comments in a collection "comments" with fields: postId, userId, text, createdAt, replies (array)
+            const unsubComments = db.collection('comments').onSnapshot((snapshot) => {
+                const commentsMap = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (!commentsMap[data.postId]) commentsMap[data.postId] = [];
+                    commentsMap[data.postId].push({ ...data, id: doc.id });
+                });
+                // Sort each post's comments by createdAt
+                for (let pid in commentsMap) {
+                    commentsMap[pid].sort((a, b) => a.createdAt - b.createdAt);
+                }
+                STATE.comments = commentsMap;
+                renderCurrentView();
+            }, err => console.warn('Comments listener error:', err));
+            STATE.unsubscribers.push(unsubComments);
+
+            // Followers: we'll store in a collection "follows" with fields: followerId, followingId
+            const unsubFollows = db.collection('follows').onSnapshot((snapshot) => {
+                const followersMap = {};
+                const followingMap = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // followersMap[followingId] = [followerIds]
+                    if (!followersMap[data.followingId]) followersMap[data.followingId] = [];
+                    followersMap[data.followingId].push(data.followerId);
+                    // followingMap[followerId] = [followingIds]
+                    if (!followingMap[data.followerId]) followingMap[data.followerId] = [];
+                    followingMap[data.followerId].push(data.followingId);
+                });
+                STATE.followers = followersMap;
+                STATE.following = followingMap;
+                renderCurrentView();
+            }, err => console.warn('Follows listener error:', err));
+            STATE.unsubscribers.push(unsubFollows);
+
+            // Notifications: for current user
+            if (STATE.currentUser) {
+                const unsubNotifs = db.collection('notifications')
+                    .where('userId', '==', STATE.currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot((snapshot) => {
+                        STATE.notifications = [];
+                        snapshot.forEach(doc => {
+                            STATE.notifications.push({ ...doc.data(), id: doc.id });
+                        });
+                        // If on notifications view, re-render
+                        if (STATE.currentView === 'notifications') renderNotifications();
+                    }, err => console.warn('Notifications listener error:', err));
+                STATE.unsubscribers.push(unsubNotifs);
+            }
+        }
+
+        // -------- CRUD OPERATIONS (Firestore) --------
+
+        // Create post
+        async function createPost(text) {
+            if (!STATE.currentUser) { showToast('Please login first', 'error'); return false; }
+            if (!text || text.trim().length === 0) { showToast('Write something...', 'error'); return false; }
+            try {
+                const postData = {
+                    userId: STATE.currentUser.uid,
+                    text: text.trim(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                };
+                const docRef = await db.collection('posts').add(postData);
+                // Add a local timestamp for sorting (we'll use the server timestamp)
+                // We'll also add a notification to followers
+                const followers = getFollowers(STATE.currentUser.uid);
+                const batch = db.batch();
+                followers.forEach(fId => {
+                    const notifRef = db.collection('notifications').doc();
+                    batch.set(notifRef, {
+                        userId: fId,
+                        fromUserId: STATE.currentUser.uid,
+                        type: 'post',
+                        postId: docRef.id,
+                        text: STATE.userProfile.displayName + ' posted something new',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false,
+                    });
+                });
+                await batch.commit();
+                showToast('Post published!', 'success');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Edit post
+        async function editPost(postId, newText) {
+            if (!STATE.currentUser) { showToast('Login required', 'error'); return false; }
+            if (!newText || newText.trim().length === 0) { showToast('Content cannot be empty', 'error'); return false; }
+            const post = STATE.posts.find(p => p.id === postId);
+            if (!post) return false;
+            if (post.userId !== STATE.currentUser.uid && !STATE.userProfile.isAdmin) {
+                showToast('Not authorized', 'error');
+                return false;
+            }
+            try {
+                await db.collection('posts').doc(postId).update({
+                    text: newText.trim(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                showToast('Post updated', 'success');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Delete post
+        async function deletePost(postId) {
+            if (!STATE.currentUser) return false;
+            const post = STATE.posts.find(p => p.id === postId);
+            if (!post) return false;
+            if (post.userId !== STATE.currentUser.uid && !STATE.userProfile.isAdmin) {
+                showToast('Not authorized', 'error');
+                return false;
+            }
+            try {
+                await db.collection('posts').doc(postId).delete();
+                // Also delete comments and likes for this post (optional, we can do in batch)
+                // We'll let security rules handle or clean up separately.
+                showToast('Post deleted', 'info');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Like toggle
+        async function toggleLike(postId) {
+            if (!STATE.currentUser) { showToast('Login to like', 'error'); return; }
+            const likeId = STATE.currentUser.uid + '_' + postId;
+            const likeRef = db.collection('likes').doc(likeId);
+            const doc = await likeRef.get();
+            if (doc.exists) {
+                // Unlike
+                await likeRef.delete();
+            } else {
+                // Like
+                await likeRef.set({
+                    postId: postId,
+                    userId: STATE.currentUser.uid,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                // Notify post owner
+                const post = STATE.posts.find(p => p.id === postId);
+                if (post && post.userId !== STATE.currentUser.uid) {
+                    await db.collection('notifications').add({
+                        userId: post.userId,
+                        fromUserId: STATE.currentUser.uid,
+                        type: 'like',
+                        postId: postId,
+                        text: STATE.userProfile.displayName + ' liked your post',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false,
+                    });
+                }
+            }
+        }
+
+        // Add comment
+        async function addComment(postId, text) {
+            if (!STATE.currentUser) { showToast('Login to comment', 'error'); return false; }
+            if (!text || text.trim().length === 0) { showToast('Write a comment', 'error'); return false; }
+            try {
+                const commentData = {
+                    postId,
+                    userId: STATE.currentUser.uid,
+                    text: text.trim(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    replies: [],
+                };
+                await db.collection('comments').add(commentData);
+                // Notify post owner
+                const post = STATE.posts.find(p => p.id === postId);
+                if (post && post.userId !== STATE.currentUser.uid) {
+                    await db.collection('notifications').add({
+                        userId: post.userId,
+                        fromUserId: STATE.currentUser.uid,
+                        type: 'comment',
+                        postId: postId,
+                        text: STATE.userProfile.displayName + ' commented on your post',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false,
+                    });
+                }
+                showToast('Comment added', 'success');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Add reply
+        async function addReply(postId, commentId, text) {
+            if (!STATE.currentUser) { showToast('Login to reply', 'error'); return false; }
+            if (!text || text.trim().length === 0) { showToast('Write a reply', 'error'); return false; }
+            try {
+                const commentRef = db.collection('comments').doc(commentId);
+                const commentDoc = await commentRef.get();
+                if (!commentDoc.exists) return false;
+                const commentData = commentDoc.data();
+                const replies = commentData.replies || [];
+                replies.push({
+                    userId: STATE.currentUser.uid,
+                    text: text.trim(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                await commentRef.update({ replies });
+                // Notify comment owner
+                if (commentData.userId !== STATE.currentUser.uid) {
+                    await db.collection('notifications').add({
+                        userId: commentData.userId,
+                        fromUserId: STATE.currentUser.uid,
+                        type: 'reply',
+                        postId: postId,
+                        text: STATE.userProfile.displayName + ' replied to your comment',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false,
+                    });
+                }
+                showToast('Reply added', 'success');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Follow toggle
+        async function toggleFollow(targetId) {
+            if (!STATE.currentUser) { showToast('Login to follow', 'error'); return; }
+            if (targetId === STATE.currentUser.uid) { showToast('You cannot follow yourself', 'info'); return; }
+            const followId = STATE.currentUser.uid + '_' + targetId;
+            const followRef = db.collection('follows').doc(followId);
+            const doc = await followRef.get();
+            if (doc.exists) {
+                await followRef.delete();
+                showToast('Unfollowed', 'info');
+            } else {
+                await followRef.set({
+                    followerId: STATE.currentUser.uid,
+                    followingId: targetId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                // Notify
+                await db.collection('notifications').add({
+                    userId: targetId,
+                    fromUserId: STATE.currentUser.uid,
+                    type: 'follow',
+                    text: STATE.userProfile.displayName + ' started following you',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false,
+                });
+                showToast('Following!', 'success');
+            }
+        }
+
+        // Update profile
+        async function updateProfile(displayName, bio) {
+            if (!STATE.currentUser) return false;
+            try {
+                await db.collection('users').doc(STATE.currentUser.uid).update({
+                    displayName,
+                    bio: bio || 'Writer on FABIS',
+                });
+                STATE.userProfile.displayName = displayName;
+                STATE.userProfile.bio = bio || 'Writer on FABIS';
+                showToast('Profile updated', 'success');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Update username (special)
+        async function updateUsername(newUsername) {
+            if (!STATE.currentUser) return false;
+            // Check uniqueness
+            const snapshot = await db.collection('users').where('username', '==', newUsername).get();
+            if (!snapshot.empty) {
+                showToast('Username already taken', 'error');
+                return false;
+            }
+            try {
+                await db.collection('users').doc(STATE.currentUser.uid).update({ username: newUsername });
+                STATE.userProfile.username = newUsername;
+                showToast('Username updated', 'success');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Update password (using Firebase Auth)
+        async function updatePassword(newPassword) {
+            if (!STATE.currentUser) return false;
+            try {
+                await STATE.currentUser.updatePassword(newPassword);
+                showToast('Password updated', 'success');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Admin: suspend user
+        async function suspendUser(uid) {
+            if (!STATE.userProfile.isAdmin) { showToast('Admin only', 'error'); return false; }
+            const userRef = db.collection('users').doc(uid);
+            const doc = await userRef.get();
+            if (!doc.exists) return false;
+            const data = doc.data();
+            if (data.isAdmin) { showToast('Cannot suspend admin', 'error'); return false; }
+            await userRef.update({ isSuspended: !data.isSuspended });
+            showToast(data.isSuspended ? 'Unsuspended' : 'Suspended', 'info');
+            return true;
+        }
+
+        // Admin: delete post
+        async function deletePostAdmin(postId) {
+            if (!STATE.userProfile.isAdmin) { showToast('Admin only', 'error'); return false; }
+            try {
+                await db.collection('posts').doc(postId).delete();
+                showToast('Post deleted by admin', 'info');
+                return true;
+            } catch (err) {
+                showToast(err.message, 'error');
+                return false;
+            }
+        }
+
+        // Search (client side)
+        function search(query) {
+            if (!query || query.trim().length === 0) return { users: [], posts: [] };
+            const q = query.trim().toLowerCase();
+            const users = STATE.users.filter(u =>
+                u.username.toLowerCase().includes(q) ||
+                u.displayName.toLowerCase().includes(q)
+            );
+            const posts = STATE.posts.filter(p =>
+                p.text.toLowerCase().includes(q)
+            ).sort((a, b) => b.createdAt - a.createdAt);
+            return { users, posts };
+        }
+
+        // -------- RENDER ENGINE --------
+        function renderApp() {
+            if (STATE.currentUser && STATE.userProfile) {
+                app.style.display = 'block';
+                splash.classList.add('hidden');
+                // Start listeners
+                if (STATE.unsubscribers.length === 0) startListeners();
+                renderCurrentView();
+                updateNav();
+            } else {
+                app.style.display = 'block';
+                splash.classList.add('hidden');
+                renderAuth();
+                // Clear listeners
+                STATE.unsubscribers.forEach(unsub => unsub());
+                STATE.unsubscribers = [];
+            }
+        }
+
+        function renderAuth() {
+            mainContent.innerHTML = `
+            <div class="flex items-center justify-center min-h-[80vh] py-8">
+              <div class="card w-full max-w-md animate-fade-in-up">
+                <div class="text-center mb-8">
+                  <h1 class="text-4xl font-black gradient-text">FABIS</h1>
+                  <p class="text-sm text-white/40 mt-1">Created by SIFAT</p>
+                  <p class="text-xs text-white/20 mt-0.5">Powered by SIFAT STUDIO</p>
+                </div>
+
+                <div id="authTabs" class="flex gap-2 mb-6 bg-white/5 rounded-xl p-1">
+                  <button class="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all auth-tab active" data-tab="login">Login</button>
+                  <button class="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all auth-tab" data-tab="signup">Sign Up</button>
+                </div>
+
+                <div id="authForm">
+                  <!-- Login -->
+                  <form id="loginForm" class="space-y-4">
+                    <input type="text" id="loginUsername" class="input-dark" placeholder="Email or Username" required />
+                    <input type="password" id="loginPassword" class="input-dark" placeholder="Password" required />
+                    <button type="submit" class="btn-primary w-full">Login</button>
+                    <p class="text-center text-sm text-white/30 mt-2 cursor-pointer hover:text-white/60" id="forgotPasswordLink">Forgot password?</p>
+                  </form>
+
+                  <!-- Signup -->
+                  <form id="signupForm" class="space-y-4" style="display:none;">
+                    <input type="email" id="signupEmail" class="input-dark" placeholder="Email" required />
+                    <input type="text" id="signupUsername" class="input-dark" placeholder="Username (unique)" required />
+                    <input type="text" id="signupDisplayName" class="input-dark" placeholder="Display Name" required />
+                    <input type="password" id="signupPassword" class="input-dark" placeholder="Password (min 6 chars)" required />
+                    <textarea id="signupBio" class="input-dark" placeholder="Bio (optional)" rows="2"></textarea>
+                    <button type="submit" class="btn-primary w-full">Create Account</button>
+                  </form>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-white/5 text-center">
+                  <p class="text-xs text-white/20">Copyright © 2026 SIFAT STUDIO. All rights reserved.</p>
+                </div>
+              </div>
+            </div>
+          `;
+
+            $$('.auth-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    $$('.auth-tab').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const tab = btn.dataset.tab;
+                    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+                    document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+                });
+            });
+
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                login(username, password);
+            });
+
+            document.getElementById('signupForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('signupEmail').value.trim();
+                const username = document.getElementById('signupUsername').value.trim();
+                const displayName = document.getElementById('signupDisplayName').value.trim();
+                const password = document.getElementById('signupPassword').value;
+                const bio = document.getElementById('signupBio').value.trim();
+                if (password.length < 6) { showToast('Password must be at least 6 chars', 'error'); return; }
+                signUp(email, username, displayName, password, bio);
+            });
+
+            document.getElementById('forgotPasswordLink').addEventListener('click', () => {
+                showToast('Send password reset email to your registered email', 'info');
+                // We could implement a reset, but for simplicity we just show toast.
+            });
+        }
+
+        function renderCurrentView() {
+            const view = STATE.currentView;
+            if (view === 'feed') renderFeed();
+            else if (view === 'explore') renderExplore();
+            else if (view === 'create') renderCreatePost();
+            else if (view === 'notifications') renderNotifications();
+            else if (view === 'profile') renderProfile(STATE.currentUser?.uid);
+            else renderFeed();
+        }
+
+        function updateNav() {
+            $$('.bottom-nav .nav-item').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === STATE.currentView);
+            });
+        }
+
+        // -------- FEED --------
+        function renderFeed() {
+            const posts = getPosts();
+            let html = `
+            <div class="flex items-center justify-between py-3">
+              <div>
+                <h2 class="text-xl font-bold">Home</h2>
+                <p class="text-sm text-white/30">Latest from everyone</p>
+              </div>
+              <span class="badge">${posts.length} posts</span>
+            </div>
+            <div id="feedContainer">
+          `;
+
+            if (posts.length === 0) {
+                html += `
+              <div class="card text-center py-12">
+                <p class="text-white/40">No posts yet.</p>
+                <p class="text-sm text-white/20 mt-1">Be the first to write something!</p>
+              </div>
+            `;
+            } else {
+                posts.forEach(post => {
+                    html += renderPostCard(post);
+                });
+            }
+
+            html += `</div>`;
+            mainContent.innerHTML = html;
+
+            attachPostListeners();
+            STATE.currentView = 'feed';
+            updateNav();
+
+            // Pull to refresh
+            let startY = 0;
+            const container = mainContent;
+            container.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; });
+            container.addEventListener('touchend', (e) => {
+                const endY = e.changedTouches[0].clientY;
+                if (endY - startY > 80 && container.scrollTop === 0) {
+                    showToast('Refreshing...', 'info');
+                }
+            });
+        }
+
+        function renderPostCard(post) {
+            const user = getUser(post.userId);
+            if (!user) return '';
+            const likes = getLikes(post.id);
+            const comments = getComments(post.id);
+            const isLiked = STATE.currentUser ? isLiked(post.id, STATE.currentUser.uid) : false;
+            const isOwn = STATE.currentUser?.uid === post.userId;
+            const isAdminUser = STATE.userProfile?.isAdmin || false;
+
+            let commentHtml = '';
+            if (comments.length > 0) {
+                const recent = comments.slice(-2);
+                recent.forEach(c => {
+                    const cu = getUser(c.userId);
+                    if (cu) {
+                        commentHtml += `
+                  <div class="flex items-start gap-2 text-sm mt-2">
+                    <span class="avatar avatar-sm" style="background:${randomColor()}">${getInitials(cu.displayName)}</span>
+                    <div>
+                      <span class="font-semibold text-sm">${cu.displayName}</span>
+                      <span class="text-white/50 text-xs ml-1">${timeAgo(c.createdAt?.toMillis ? c.createdAt.toMillis() : c.createdAt)}</span>
+                      <p class="text-white/70 text-sm">${escapeHtml(c.text)}</p>
+                    </div>
+                  </div>
+                `;
+                    }
+                });
+                if (comments.length > 2) {
+                    commentHtml +=
+                        `<p class="text-xs text-purple-400/60 mt-1 cursor-pointer hover:text-purple-400 view-all-comments" data-postid="${post.id}">View all ${comments.length} comments</p>`;
+                }
+            }
+
+            const avatarBg = user.avatar || randomColor();
+            const createdAt = post.createdAt?.toMillis ? post.createdAt.toMillis() : post.createdAt;
+
+            return `
+            <div class="post animate-fade-in-up" data-postid="${post.id}">
+              <div class="flex items-start gap-3">
+                <div class="avatar" style="background:${avatarBg}">${getInitials(user.displayName)}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold">${user.displayName}</span>
+                    <span class="text-white/30 text-sm">@${user.username}</span>
+                    <span class="text-white/20 text-xs">·</span>
+                    <span class="text-white/20 text-xs">${timeAgo(createdAt)}</span>
+                    ${post.updatedAt && post.updatedAt.toMillis && post.updatedAt.toMillis() > createdAt ? `<span class="text-white/20 text-xs">(edited)</span>` : ''}
+                    ${user.isAdmin ? `<span class="badge text-xs">Admin</span>` : ''}
+                  </div>
+                  <div class="mt-1.5 text-white/90 whitespace-pre-wrap break-words post-text">${escapeHtml(post.text)}</div>
+
+                  <!-- Actions -->
+                  <div class="flex items-center gap-1 mt-3 pt-3 border-t border-white/5 flex-wrap">
+                    <button class="like-btn ${isLiked ? 'liked' : ''}" data-postid="${post.id}">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="${isLiked ? '#ef4444' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                      <span>${likes.length}</span>
+                    </button>
+
+                    <button class="like-btn comment-toggle" data-postid="${post.id}" style="color:rgba(255,255,255,0.4);">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      <span>${comments.length}</span>
+                    </button>
+
+                    <button class="like-btn share-btn" data-postid="${post.id}" style="color:rgba(255,255,255,0.4);">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    </button>
+
+                    <button class="like-btn copy-btn" data-postid="${post.id}" style="color:rgba(255,255,255,0.4);">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    </button>
+
+                    ${(isOwn || isAdminUser) ? `
+                      <button class="like-btn edit-post-btn" data-postid="${post.id}" style="color:rgba(255,255,255,0.4);">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="like-btn delete-post-btn" data-postid="${post.id}" style="color:rgba(239,68,68,0.5);">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                      </button>
+                    ` : ''}
+                  </div>
+
+                  <!-- Comments section -->
+                  <div class="mt-3 comment-section" style="display:none;" data-postid="${post.id}">
+                    ${commentHtml}
+                    <div class="flex items-center gap-2 mt-2">
+                      <div class="avatar avatar-sm" style="background:${STATE.currentUser ? randomColor() : '#333'}">${STATE.currentUser ? getInitials(STATE.userProfile.displayName) : '?'}</div>
+                      <div class="flex-1 flex gap-2">
+                        <input type="text" class="input-dark text-sm comment-input" placeholder="Write a comment..." data-postid="${post.id}" ${!STATE.currentUser ? 'disabled' : ''} />
+                        <button class="btn-primary text-sm px-4 py-2 comment-submit" data-postid="${post.id}" ${!STATE.currentUser ? 'disabled' : ''}>Post</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        function attachPostListeners() {
+            // Like
+            $$('.like-btn[data-postid]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const postId = btn.dataset.postid;
+                    toggleLike(postId);
+                });
+            });
+
+            // Comment toggle
+            $$('.comment-toggle').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    const section = document.querySelector(`.comment-section[data-postid="${postId}"]`);
+                    if (section) {
+                        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+                    }
+                });
+            });
+
+            // Comment submit
+            $$('.comment-submit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    const input = document.querySelector(`.comment-input[data-postid="${postId}"]`);
+                    if (input && input.value.trim()) {
+                        addComment(postId, input.value.trim());
+                        input.value = '';
+                    }
+                });
+            });
+
+            $$('.comment-input').forEach(inp => {
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const postId = inp.dataset.postid;
+                        const btn = document.querySelector(`.comment-submit[data-postid="${postId}"]`);
+                        if (btn) btn.click();
+                    }
+                });
+            });
+
+            // Share
+            $$('.share-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    const post = STATE.posts.find(p => p.id === postId);
+                    if (post) {
+                        if (navigator.share) {
+                            navigator.share({ title: 'FABIS Post', text: post.text })
+                                .catch(() => {});
+                        } else {
+                            navigator.clipboard.writeText(post.text).then(() => {
+                                showToast('Post text copied to clipboard', 'success');
+                            }).catch(() => {
+                                showToast('Share: ' + post.text.slice(0, 100) + '...', 'info');
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Copy
+            $$('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    const post = STATE.posts.find(p => p.id === postId);
+                    if (post) {
+                        navigator.clipboard.writeText(post.text).then(() => {
+                            showToast('Text copied!', 'success');
+                        }).catch(() => {
+                            showToast('Copy: ' + post.text.slice(0, 100) + '...', 'info');
+                        });
+                    }
+                });
+            });
+
+            // Edit post
+            $$('.edit-post-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    const post = STATE.posts.find(p => p.id === postId);
+                    if (post) {
+                        openModal(`
+                    <h3 class="text-xl font-bold mb-4">Edit Post</h3>
+                    <textarea id="editPostText" class="input-dark" rows="4">${escapeHtml(post.text)}</textarea>
+                    <div class="flex gap-3 mt-4">
+                      <button class="btn-primary flex-1" id="saveEditPost">Save</button>
+                      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                    </div>
+                  `);
+                        document.getElementById('saveEditPost').addEventListener('click', () => {
+                            const newText = document.getElementById('editPostText').value.trim();
+                            if (newText) {
+                                editPost(postId, newText);
+                                closeModal();
+                            } else {
+                                showToast('Content cannot be empty', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Delete post
+            $$('.delete-post-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    if (confirm('Delete this post?')) {
+                        deletePost(postId);
+                    }
+                });
+            });
+
+            // View all comments
+            $$('.view-all-comments').forEach(el => {
+                el.addEventListener('click', () => {
+                    const postId = el.dataset.postid;
+                    viewAllComments(postId);
+                });
+            });
+        }
+
+        function viewAllComments(postId) {
+            const comments = getComments(postId);
+            const post = STATE.posts.find(p => p.id === postId);
+            if (!post) return;
+            let html = `
+            <h3 class="text-xl font-bold mb-2">Comments</h3>
+            <p class="text-sm text-white/30 mb-4">on: ${escapeHtml(post.text.slice(0, 100))}${post.text.length > 100 ? '...' : ''}</p>
+            <div class="max-h-80 overflow-y-auto">
+          `;
+            if (comments.length === 0) {
+                html += `<p class="text-white/40 text-sm">No comments yet.</p>`;
+            } else {
+                comments.forEach(c => {
+                    const cu = getUser(c.userId);
+                    if (cu) {
+                        html += `
+                  <div class="comment">
+                    <div class="flex items-start gap-2">
+                      <span class="avatar avatar-sm" style="background:${randomColor()}">${getInitials(cu.displayName)}</span>
+                      <div class="flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="font-semibold text-sm">${cu.displayName}</span>
+                          <span class="text-white/30 text-xs">@${cu.username}</span>
+                          <span class="text-white/20 text-xs">·</span>
+                          <span class="text-white/20 text-xs">${timeAgo(c.createdAt?.toMillis ? c.createdAt.toMillis() : c.createdAt)}</span>
+                        </div>
+                        <p class="text-sm text-white/80">${escapeHtml(c.text)}</p>
+                        <button class="text-xs text-purple-400/60 hover:text-purple-400 mt-1 reply-toggle" data-postid="${postId}" data-commentid="${c.id}">Reply</button>
+                        <div class="reply-section mt-2" style="display:none;" data-postid="${postId}" data-commentid="${c.id}">
+                          <div class="flex gap-2">
+                            <input type="text" class="input-dark text-sm reply-input" placeholder="Write a reply..." />
+                            <button class="btn-primary text-sm px-3 py-1 reply-submit" data-postid="${postId}" data-commentid="${c.id}">Reply</button>
+                          </div>
+                        </div>
+                        ${c.replies && c.replies.length > 0 ? c.replies.map(r => {
+                          const ru = getUser(r.userId);
+                          return ru ? `
+                            <div class="flex items-start gap-2 mt-2 ml-6">
+                              <span class="avatar avatar-sm" style="background:${randomColor()}">${getInitials(ru.displayName)}</span>
+                              <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                  <span class="font-semibold text-sm">${ru.displayName}</span>
+                                  <span class="text-white/30 text-xs">@${ru.username}</span>
+                                  <span class="text-white/20 text-xs">·</span>
+                                  <span class="text-white/20 text-xs">${timeAgo(r.createdAt?.toMillis ? r.createdAt.toMillis() : r.createdAt)}</span>
+                                </div>
+                                <p class="text-sm text-white/70">${escapeHtml(r.text)}</p>
+                              </div>
+                            </div>
+                          ` : '';
+                        }).join('') : ''}
+                      </div>
+                    </div>
+                  </div>
+                `;
+                    }
+                });
+            }
+            html += `</div>
+            <div class="flex gap-2 mt-4 pt-4 border-t border-white/5">
+              <input type="text" id="newCommentInput" class="input-dark flex-1" placeholder="Write a comment..." />
+              <button class="btn-primary" id="newCommentSubmit" data-postid="${postId}">Post</button>
+            </div>
+            <button class="btn-secondary w-full mt-3" onclick="closeModal()">Close</button>
+          `;
+            openModal(html);
+
+            $$('.reply-toggle').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    const commentId = btn.dataset.commentid;
+                    const section = document.querySelector(
+                        `.reply-section[data-postid="${postId}"][data-commentid="${commentId}"]`);
+                    if (section) {
+                        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+                    }
+                });
+            });
+
+            $$('.reply-submit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const postId = btn.dataset.postid;
+                    const commentId = btn.dataset.commentid;
+                    const input = document.querySelector(
+                        `.reply-input[data-postid="${postId}"][data-commentid="${commentId}"]`);
+                    if (input && input.value.trim()) {
+                        addReply(postId, commentId, input.value.trim());
+                        input.value = '';
+                        closeModal();
+                        setTimeout(() => viewAllComments(postId), 300);
+                    }
+                });
+            });
+
+            document.getElementById('newCommentSubmit').addEventListener('click', () => {
+                const postId = document.getElementById('newCommentSubmit').dataset.postid;
+                const input = document.getElementById('newCommentInput');
+                if (input && input.value.trim()) {
+                    addComment(postId, input.value.trim());
+                    input.value = '';
+                    closeModal();
+                    setTimeout(() => viewAllComments(postId), 300);
+                }
+            });
+        }
+
+        // -------- EXPLORE --------
+        function renderExplore() {
+            const html = `
+            <div class="py-3">
+              <h2 class="text-xl font-bold">Explore</h2>
+              <p class="text-sm text-white/30">Discover people and posts</p>
+            </div>
+            <div class="card mb-4">
+              <input type="text" id="searchInput" class="input-dark" placeholder="Search users, posts..." />
+              <div id="searchResults" class="mt-3"></div>
+            </div>
+            <div id="exploreContent">
+              <h3 class="font-semibold text-white/40 text-sm mb-3">All Users</h3>
+              ${STATE.users.map(u => renderUserCard(u)).join('')}
+            </div>
+          `;
+            mainContent.innerHTML = html;
+            STATE.currentView = 'explore';
+            updateNav();
+
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                const results = search(query);
+                const container = document.getElementById('searchResults');
+                if (!query) {
+                    container.innerHTML = '';
+                    return;
+                }
+                let html = '';
+                if (results.users.length > 0) {
+                    html += `<div class="mb-3"><span class="text-xs text-white/30">Users</span>`;
+                    results.users.forEach(u => {
+                        html += renderUserCard(u, true);
+                    });
+                    html += `</div>`;
+                }
+                if (results.posts.length > 0) {
+                    html += `<div><span class="text-xs text-white/30">Posts</span>`;
+                    results.posts.forEach(p => {
+                        const pu = getUser(p.userId);
+                        if (pu) {
+                            html += `
+                      <div class="text-sm text-white/70 py-2 border-b border-white/5 last:border-0">
+                        <span class="text-white/40">@${pu.username}</span>: ${escapeHtml(p.text.slice(0, 80))}${p.text.length > 80 ? '...' : ''}
+                        <span class="text-white/20 text-xs ml-2">${timeAgo(p.createdAt?.toMillis ? p.createdAt.toMillis() : p.createdAt)}</span>
+                      </div>
+                    `;
+                        }
+                    });
+                    html += `</div>`;
+                }
+                if (!results.users.length && !results.posts.length) {
+                    html = `<p class="text-white/40 text-sm">No results found</p>`;
+                }
+                container.innerHTML = html;
+            });
+        }
+
+        function renderUserCard(user, compact = false) {
+            const isFollowing = STATE.currentUser ? isFollowing(STATE.currentUser.uid, user.uid) : false;
+            const isSelf = STATE.currentUser?.uid === user.uid;
+            const avatarBg = user.avatar || randomColor();
+
+            if (compact) {
+                return `
+              <div class="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="viewProfile('${user.uid}')">
+                  <div class="avatar avatar-sm" style="background:${avatarBg}">${getInitials(user.displayName)}</div>
+                  <div>
+                    <div class="font-semibold text-sm">${user.displayName}</div>
+                    <div class="text-white/30 text-xs">@${user.username}</div>
+                  </div>
+                </div>
+                ${!isSelf && STATE.currentUser ? `
+                  <button class="btn-primary text-xs px-3 py-1 follow-btn" data-userid="${user.uid}">${isFollowing ? 'Unfollow' : 'Follow'}</button>
+                ` : ''}
+              </div>
+            `;
+            }
+
+            return `
+            <div class="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+              <div class="flex items-center gap-3 cursor-pointer" onclick="viewProfile('${user.uid}')">
+                <div class="avatar" style="background:${avatarBg}">${getInitials(user.displayName)}</div>
+                <div>
+                  <div class="font-semibold">${user.displayName}</div>
+                  <div class="text-white/30 text-sm">@${user.username}</div>
+                  <div class="text-white/20 text-xs">${getFollowers(user.uid).length} followers</div>
+                </div>
+              </div>
+              ${!isSelf && STATE.currentUser ? `
+                <button class="btn-primary text-sm px-4 py-1.5 follow-btn" data-userid="${user.uid}">${isFollowing ? 'Unfollow' : 'Follow'}</button>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        // -------- CREATE POST --------
+        function renderCreatePost() {
+            if (!STATE.currentUser) {
+                showToast('Please login first', 'error');
+                renderFeed();
+                return;
+            }
+            const html = `
+            <div class="py-3">
+              <h2 class="text-xl font-bold">Create Post</h2>
+              <p class="text-sm text-white/30">Share your thoughts with the world</p>
+            </div>
+            <div class="card">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="avatar" style="background:${STATE.userProfile.avatar || randomColor()}">${getInitials(STATE.userProfile.displayName)}</div>
+                <div>
+                  <div class="font-semibold">${STATE.userProfile.displayName}</div>
+                  <div class="text-white/30 text-sm">@${STATE.userProfile.username}</div>
+                </div>
+              </div>
+              <textarea id="newPostText" class="input-dark" rows="5" placeholder="What's on your mind?" style="resize:none;"></textarea>
+              <div class="flex justify-end mt-4">
+                <button class="btn-primary" id="publishPost">Publish</button>
+              </div>
+            </div>
+          `;
+            mainContent.innerHTML = html;
+            STATE.currentView = 'create';
+            updateNav();
+
+            document.getElementById('publishPost').addEventListener('click', () => {
+                const text = document.getElementById('newPostText').value;
+                if (createPost(text)) {
+                    document.getElementById('newPostText').value = '';
+                    STATE.currentView = 'feed';
+                    renderFeed();
+                }
+            });
+
+            document.getElementById('newPostText').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    document.getElementById('publishPost').click();
+                }
+            });
+        }
+
+        // -------- NOTIFICATIONS --------
+        function renderNotifications() {
+            if (!STATE.currentUser) {
+                showToast('Login to see notifications', 'error');
+                renderFeed();
+                return;
+            }
+            const notifs = STATE.notifications;
+            // Mark as read (we can update in background)
+            notifs.forEach(n => {
+                if (!n.read) {
+                    db.collection('notifications').doc(n.id).update({ read: true });
+                }
+            });
+
+            let html = `
+            <div class="py-3 flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-bold">Notifications</h2>
+                <p class="text-sm text-white/30">Stay updated</p>
+              </div>
+              <span class="badge">${notifs.length}</span>
+            </div>
+          `;
+
+            if (notifs.length === 0) {
+                html += `
+              <div class="card text-center py-12">
+                <p class="text-white/40">No notifications yet</p>
+                <p class="text-sm text-white/20 mt-1">Interact with posts to see activity</p>
+              </div>
+            `;
+            } else {
+                notifs.forEach(n => {
+                    const from = getUser(n.fromUserId);
+                    html += `
+                <div class="card mb-2 flex items-center gap-3 ${n.read ? 'opacity-60' : ''}">
+                  ${from ? `<div class="avatar avatar-sm" style="background:${from.avatar || randomColor()}">${getInitials(from.displayName)}</div>` : `<div class="avatar avatar-sm" style="background:#333">?</div>`}
+                  <div class="flex-1 text-sm">
+                    ${n.text}
+                    <span class="text-white/20 text-xs ml-2">${timeAgo(n.createdAt?.toMillis ? n.createdAt.toMillis() : n.createdAt)}</span>
+                  </div>
+                </div>
+              `;
+                });
+            }
+
+            mainContent.innerHTML = html;
+            STATE.currentView = 'notifications';
+            updateNav();
+        }
+
+        // -------- PROFILE --------
+        function renderProfile(uid) {
+            if (!uid) {
+                if (!STATE.currentUser) { renderAuth(); return; }
+                uid = STATE.currentUser.uid;
+            }
+            const user = getUser(uid);
+            if (!user) { showToast('User not found', 'error');
+                renderFeed(); return; }
+
+            const isSelf = STATE.currentUser?.uid === uid;
+            const isFollowing = STATE.currentUser ? isFollowing(STATE.currentUser.uid, uid) : false;
+            const followers = getFollowers(uid);
+            const following = getFollowing(uid);
+            const posts = getPostsByUser(uid);
+            const avatarBg = user.avatar || randomColor();
+
+            let html = `
+            <div class="py-3">
+              <div class="flex items-center gap-4 mb-4">
+                <div class="avatar avatar-lg" style="background:${avatarBg}">${getInitials(user.displayName)}</div>
+                <div class="flex-1">
+                  <h2 class="text-2xl font-bold">${user.displayName}</h2>
+                  <p class="text-white/30 text-sm">@${user.username}</p>
+                  ${user.isAdmin ? `<span class="badge text-xs">Admin</span>` : ''}
+                  ${user.isSuspended ? `<span class="badge text-xs" style="background:rgba(239,68,68,0.2);color:#ef4444;">Suspended</span>` : ''}
+                </div>
+              </div>
+
+              <p class="text-white/60 text-sm mb-3">${escapeHtml(user.bio || 'No bio yet')}</p>
+
+              <div class="flex gap-4 text-sm mb-4">
+                <span><span class="font-semibold">${posts.length}</span> posts</span>
+                <span><span class="font-semibold">${followers.length}</span> followers</span>
+                <span><span class="font-semibold">${following.length}</span> following</span>
+                <span class="text-white/20">Joined ${user.joinDate ? new Date(user.joinDate.toMillis ? user.joinDate.toMillis() : user.joinDate).toLocaleDateString() : 'recently'}</span>
+              </div>
+
+              <div class="flex gap-2 flex-wrap">
+                ${isSelf ? `
+                  <button class="btn-secondary text-sm" onclick="renderEditProfile()">Edit Profile</button>
+                  <button class="btn-secondary text-sm" onclick="renderSettings()">Settings</button>
+                  ${user.isAdmin ? `<button class="btn-secondary text-sm" onclick="renderAdminPanel()">Admin Panel</button>` : ''}
+                  <button class="btn-danger text-sm" onclick="logout()">Logout</button>
+                ` : `
+                  ${STATE.currentUser ? `
+                    <button class="btn-primary text-sm follow-btn" data-userid="${uid}">${isFollowing ? 'Unfollow' : 'Follow'}</button>
+                  ` : ''}
+                `}
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h3 class="font-semibold text-white/40 text-sm mb-3">Posts</h3>
+              ${posts.length === 0 ? `<div class="card text-center py-8"><p class="text-white/40">No posts yet</p></div>` : posts.map(p => renderPostCard(p)).join('')}
+            </div>
+          `;
+
+            mainContent.innerHTML = html;
+            STATE.currentView = 'profile';
+            updateNav();
+
+            attachPostListeners();
+            $$('.follow-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.dataset.userid;
+                    toggleFollow(targetId);
+                });
+            });
+        }
+
+        // -------- EDIT PROFILE --------
+        function renderEditProfile() {
+            const user = STATE.userProfile;
+            if (!user) return;
+            openModal(`
+            <h3 class="text-xl font-bold mb-4">Edit Profile</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm text-white/40 block mb-1">Display Name</label>
+                <input type="text" id="editDisplayName" class="input-dark" value="${escapeHtml(user.displayName)}" />
+              </div>
+              <div>
+                <label class="text-sm text-white/40 block mb-1">Bio</label>
+                <textarea id="editBio" class="input-dark" rows="3">${escapeHtml(user.bio || '')}</textarea>
+              </div>
+              <div class="flex gap-3">
+                <button class="btn-primary flex-1" id="saveProfile">Save</button>
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+              </div>
+            </div>
+          `);
+            document.getElementById('saveProfile').addEventListener('click', async () => {
+                const displayName = document.getElementById('editDisplayName').value.trim();
+                const bio = document.getElementById('editBio').value.trim();
+                if (displayName) {
+                    await updateProfile(displayName, bio);
+                    closeModal();
+                    renderProfile(STATE.currentUser.uid);
+                } else {
+                    showToast('Display name is required', 'error');
+                }
+            });
+        }
+
+        // -------- SETTINGS --------
+        function renderSettings() {
+            const user = STATE.userProfile;
+            if (!user) return;
+            const theme = user.settings?.theme || 'dark';
+            const privacy = user.settings?.privacy || 'public';
+
+            openModal(`
+            <h3 class="text-xl font-bold mb-4">Settings</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm text-white/40 block mb-1">Theme</label>
+                <div class="flex gap-2">
+                  <button class="btn-secondary text-sm flex-1 theme-btn ${theme === 'dark' ? 'btn-primary' : ''}" data-theme="dark">Dark</button>
+                  <button class="btn-secondary text-sm flex-1 theme-btn ${theme === 'light' ? 'btn-primary' : ''}" data-theme="light">Light</button>
+                </div>
+              </div>
+              <div>
+                <label class="text-sm text-white/40 block mb-1">Privacy</label>
+                <div class="flex gap-2">
+                  <button class="btn-secondary text-sm flex-1 privacy-btn ${privacy === 'public' ? 'btn-primary' : ''}" data-privacy="public">Public</button>
+                  <button class="btn-secondary text-sm flex-1 privacy-btn ${privacy === 'private' ? 'btn-primary' : ''}" data-privacy="private">Private</button>
+                </div>
+              </div>
+              <hr class="border-white/5" />
+              <button class="btn-secondary w-full text-sm" onclick="renderChangeUsername()">Change Username</button>
+              <button class="btn-secondary w-full text-sm" onclick="renderChangePassword()">Change Password</button>
+              <button class="btn-danger w-full text-sm" onclick="logout(); closeModal();">Logout</button>
+              <p class="text-xs text-white/20 text-center mt-4">FABIS v1.0.0 · Created by SIFAT</p>
+              <p class="text-xs text-white/10 text-center">Copyright © 2026 SIFAT STUDIO</p>
+            </div>
+          `);
+
+            $$('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const theme = btn.dataset.theme;
+                    await db.collection('users').doc(STATE.currentUser.uid).update({
+                        'settings.theme': theme
+                    });
+                    STATE.userProfile.settings.theme = theme;
+                    document.body.classList.toggle('light-mode', theme === 'light');
+                    renderSettings();
+                });
+            });
+
+            $$('.privacy-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const privacy = btn.dataset.privacy;
+                    await db.collection('users').doc(STATE.currentUser.uid).update({
+                        'settings.privacy': privacy
+                    });
+                    STATE.userProfile.settings.privacy = privacy;
+                    renderSettings();
+                    showToast('Privacy updated', 'info');
+                });
+            });
+        }
+
+        function renderChangeUsername() {
+            openModal(`
+            <h3 class="text-xl font-bold mb-4">Change Username</h3>
+            <p class="text-sm text-white/30 mb-4">Current: @${STATE.userProfile.username}</p>
+            <div class="space-y-4">
+              <input type="text" id="newUsername" class="input-dark" placeholder="New username" />
+              <div class="flex gap-3">
+                <button class="btn-primary flex-1" id="saveUsername">Update</button>
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+              </div>
+            </div>
+          `);
+            document.getElementById('saveUsername').addEventListener('click', async () => {
+                const newUsername = document.getElementById('newUsername').value.trim();
+                if (!newUsername || newUsername.length < 3) {
+                    showToast('Username must be at least 3 characters', 'error');
+                    return;
+                }
+                await updateUsername(newUsername);
+                closeModal();
+                renderProfile(STATE.currentUser.uid);
+            });
+        }
+
+        function renderChangePassword() {
+            openModal(`
+            <h3 class="text-xl font-bold mb-4">Change Password</h3>
+            <div class="space-y-4">
+              <input type="password" id="currentPassword" class="input-dark" placeholder="Current password" />
+              <input type="password" id="newPassword" class="input-dark" placeholder="New password (min 6 chars)" />
+              <div class="flex gap-3">
+                <button class="btn-primary flex-1" id="savePassword">Update</button>
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+              </div>
+            </div>
+          `);
+            document.getElementById('savePassword').addEventListener('click', async () => {
+                const current = document.getElementById('currentPassword').value;
+                const newPwd = document.getElementById('newPassword').value;
+                // Re-authenticate
+                const user = auth.currentUser;
+                const cred = firebase.auth.EmailAuthProvider.credential(user.email, current);
+                try {
+                    await user.reauthenticateWithCredential(cred);
+                    if (!newPwd || newPwd.length < 6) {
+                        showToast('New password must be at least 6 characters', 'error');
+                        return;
+                    }
+                    await updatePassword(newPwd);
+                    closeModal();
+                } catch (err) {
+                    showToast('Current password is incorrect', 'error');
+                }
+            });
+        }
+
+        // -------- ADMIN PANEL --------
+        function renderAdminPanel() {
+            if (!STATE.userProfile?.isAdmin) { showToast('Admin access required', 'error'); return; }
+            const users = STATE.users;
+            const posts = STATE.posts;
+
+            openModal(`
+            <h3 class="text-xl font-bold mb-4">Admin Panel</h3>
+            <div class="text-sm text-white/40 mb-2">${users.length} users · ${posts.length} posts</div>
+
+            <div class="mb-4">
+              <h4 class="font-semibold text-sm text-white/60 mb-2">Users</h4>
+              <div class="max-h-60 overflow-y-auto space-y-1">
+                ${users.map(u => `
+                  <div class="flex items-center justify-between py-1.5 border-b border-white/5 text-sm">
+                    <span>${u.displayName} <span class="text-white/30">@${u.username}</span> ${u.isAdmin ? '👑' : ''} ${u.isSuspended ? '🚫' : ''}</span>
+                    <div class="flex gap-1">
+                      <button class="text-xs px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 suspend-btn" data-userid="${u.uid}">${u.isSuspended ? 'Unsuspend' : 'Suspend'}</button>
+                      <button class="text-xs px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 view-user-btn" data-userid="${u.uid}">View</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold text-sm text-white/60 mb-2">Recent Posts</h4>
+              <div class="max-h-60 overflow-y-auto space-y-1">
+                ${posts.slice(0, 20).map(p => {
+                  const pu = getUser(p.userId);
+                  return `
+                    <div class="flex items-center justify-between py-1.5 border-b border-white/5 text-sm">
+                      <span class="text-white/60 truncate max-w-[200px]">${escapeHtml(p.text.slice(0, 50))}${p.text.length > 50 ? '...' : ''}</span>
+                      <span class="text-white/20 text-xs">${pu ? '@'+pu.username : 'unknown'}</span>
+                      <button class="text-xs px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 delete-post-admin" data-postid="${p.id}">Delete</button>
+                    </div>
+                  `;
+                }).join('')}
+                ${posts.length === 0 ? '<p class="text-white/30 text-sm">No posts</p>' : ''}
+              </div>
+            </div>
+
+            <button class="btn-secondary w-full mt-4 text-sm" onclick="closeModal()">Close</button>
+          `);
+
+            $$('.suspend-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const uid = btn.dataset.userid;
+                    await suspendUser(uid);
+                    closeModal();
+                    setTimeout(renderAdminPanel, 300);
+                });
+            });
+
+            $$('.view-user-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const uid = btn.dataset.userid;
+                    closeModal();
+                    viewProfile(uid);
+                });
+            });
+
+            $$('.delete-post-admin').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (confirm('Delete this post?')) {
+                        await deletePostAdmin(btn.dataset.postid);
+                        closeModal();
+                        setTimeout(renderAdminPanel, 300);
+                    }
+                });
+            });
+        }
+
+        // -------- VIEW PROFILE (global) --------
+        window.viewProfile = function(uid) {
+            renderProfile(uid);
+        };
+
+        // -------- NAVIGATION --------
+        document.addEventListener('click', (e) => {
+            const navItem = e.target.closest('.bottom-nav .nav-item');
+            if (navItem) {
+                const view = navItem.dataset.view;
+                if (view === 'profile' && !STATE.currentUser) {
+                    showToast('Please login first', 'error');
+                    return;
+                }
+                if (view === 'create' && !STATE.currentUser) {
+                    showToast('Please login to create posts', 'error');
+                    return;
+                }
+                if (view === 'notifications' && !STATE.currentUser) {
+                    showToast('Please login to see notifications', 'error');
+                    return;
+                }
+                STATE.currentView = view;
+                renderCurrentView();
+            }
+        });
+
+        // -------- AUTH STATE OBSERVER --------
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // Fetch profile
+                const doc = await db.collection('users').doc(user.uid).get();
+                if (doc.exists) {
+                    STATE.currentUser = user;
+                    STATE.userProfile = doc.data();
+                    // Apply theme
+                    if (STATE.userProfile.settings?.theme === 'light') {
+                        document.body.classList.add('light-mode');
+                    } else {
+                        document.body.classList.remove('light-mode');
+                    }
+                    renderApp();
+                } else {
+                    // Profile missing, sign out
+                    await auth.signOut();
+                }
+            } else {
+                STATE.currentUser = null;
+                STATE.userProfile = null;
+                renderApp();
+            }
+        });
+
+        // -------- INIT --------
+        // Show splash for a moment
+        setTimeout(() => {
+            splash.classList.add('hidden');
+            // If already authenticated, renderApp will be called by onAuthStateChanged
+            if (!STATE.currentUser) {
+                renderApp();
+            }
+        }, 1200);
+
+        // Global close modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        console.log('🚀 FABIS v1.0.0 (Firebase)');
+        console.log('📝 Created by SIFAT');
+        console.log('⚡ Powered by SIFAT STUDIO');
+        console.log('© 2026 SIFAT STUDIO. All rights reserved.');
+    </script>
+</body>
+</html>
